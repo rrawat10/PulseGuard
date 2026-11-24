@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Activity, HeartPulse, RefreshCw, Upload, Waves } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import Navigation from "@/components/Navigation";
+import EmergencyHelp from "@/components/EmergencyHelp";
 import { Button } from "@/components/ui/button";
 import { useECGData } from "@/hooks/useECGData";
 import { usePulseReadings } from "@/hooks/useHealthData";
@@ -75,7 +76,7 @@ export default function LivePulse() {
       <main className="page-container">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div><p className="eyebrow">ECG monitoring</p><h1 className="page-title mt-2">Live pulse</h1><p className="page-subtitle">Your waveform and latest measurements in one focused view.</p></div>
-          <Button variant="outline" onClick={refresh} disabled={isLoading} className="h-11 rounded-xl border-blue-200 bg-white"><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />Refresh</Button>
+          <div className="flex flex-wrap gap-3"><Button asChild variant="outline" className="h-11 rounded-xl border-rose-200 bg-white text-rose-700 hover:bg-rose-50"><a href="#emergency-help">Emergency help</a></Button><Button variant="outline" onClick={refresh} disabled={isLoading} className="h-11 rounded-xl border-blue-200 bg-white"><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />Refresh</Button></div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -117,6 +118,7 @@ export default function LivePulse() {
         </section>
 
         <section className="soft-panel mt-6 p-6"><p className="eyebrow">Analysis</p><h2 className="mt-1 text-xl font-semibold">Latest result</h2>{ecgData.predictions.length ? <div className="mt-5 space-y-3">{ecgData.predictions.slice(0, 3).map((prediction) => <div key={`${prediction.class_id}-${prediction.disease_name}`} className="flex items-center justify-between gap-4 rounded-xl border border-blue-100 bg-blue-50/40 px-4 py-3"><span className="font-medium text-slate-800">{prediction.disease_name}</span><span className="text-sm font-semibold text-primary">{(prediction.probability * 100).toFixed(1)}%</span></div>)}</div> : <p className="mt-4 text-sm text-slate-500">No analysis is available for this account yet.</p>}</section>
+        <div className="mt-6"><EmergencyHelp /></div>
       </main>
     </div>
   );

@@ -59,8 +59,8 @@ export default function EmergencyContactsCard() {
   };
 
   return (
-    <section className="soft-panel p-6 sm:p-8">
-      <div className="mb-6 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-primary"><Phone className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold">Emergency contacts</h2><p className="text-sm text-slate-500">Keep important phone numbers with your account.</p></div></div>
+    <section id="emergency-contacts" className="soft-panel scroll-mt-24 p-6 sm:p-8">
+      <div className="mb-6 flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-primary"><Phone className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold">Emergency contacts</h2><p className="mt-1 text-base leading-7 text-slate-500">Keep someone you trust within reach. Saved contacts appear on your dashboard and ECG page.</p></div></div>
       <div className="space-y-4">
         {contacts.map((contact, index) => <div key={contact.id || `new-${index}`} className="rounded-xl border border-blue-100 bg-slate-50/40 p-4">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -70,7 +70,7 @@ export default function EmergencyContactsCard() {
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={() => setContacts((current) => current.filter((_, i) => i !== index))} className="mt-3 text-slate-500"><Trash2 className="mr-2 h-4 w-4" />Remove</Button>
         </div>)}
-        {!contacts.length && <p className="text-sm text-slate-500">No contacts saved yet.</p>}
+        {!contacts.length && <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/30 p-6"><p className="font-medium text-slate-800">Who would you call for support?</p><p className="mt-2 text-base leading-7 text-slate-500">Add a family member, caregiver or another person you trust.</p></div>}
         <div className="flex flex-wrap gap-3"><Button type="button" variant="outline" onClick={() => setContacts((current) => [...current, { name: "", phone: "", relation: "" }])} className="rounded-xl"><Plus className="mr-2 h-4 w-4" />Add contact</Button><Button type="button" onClick={save} disabled={saving} className="rounded-xl"><Save className="mr-2 h-4 w-4" />{saving ? "Saving..." : "Save contacts"}</Button></div>
       </div>
     </section>

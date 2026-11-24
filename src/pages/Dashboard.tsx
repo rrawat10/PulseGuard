@@ -1,173 +1,66 @@
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Activity, ArrowRight, CalendarDays, FileText, HeartPulse, ShieldCheck, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
-import { Heart, Activity, FileText } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { usePulseReadings, useEmergencyContacts } from "@/hooks/useHealthData";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import { useECGData } from "@/hooks/useECGData";
+import { useEmergencyContacts, usePulseReadings, useUserProfile } from "@/hooks/useHealthData";
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  
-  // Fetch real data
-  const { data: pulseReadings, isLoading: loadingPulse } = usePulseReadings(100);
-  const { data: contacts, isLoading: loadingContacts } = useEmergencyContacts();
+function formatWhen(value?: string | Date | null) {
+  if (!value) return "No readings yet";
+  return new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const { data: profile } = useUserProfile();
+  const { data: readings = [], isLoading } = usePulseReadings(100);
+  const { data: contacts = [] } = useEmergencyContacts();
   const { ecgData } = useECGData();
-
-  // Debug logging
-  console.log("Dashboard - Pulse readings data:", pulseReadings);
-  console.log("Dashboard - Loading pulse:", loadingPulse);
-  console.log("Dashboard - Pulse readings count:", pulseReadings?.length);
-
-  // Calculate last 1 hour's average BPM, or fall back to last 60 readings if disconnected
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
-  
-  const lastHourReadings = pulseReadings?.filter(reading => 
-    new Date(reading.created_at) >= oneHourAgo
-  ) || [];
-  
-  // If no readings in last hour (disconnected), use last 60 readings instead
-  const readingsToUse = lastHourReadings.length > 0 
-    ? lastHourReadings 
-    : (pulseReadings?.slice(0, 60) || []);
-  
-  console.log("Dashboard - Readings to use:", readingsToUse.length);
-  
-  const avgBPM = readingsToUse.length > 0
-    ? Math.max(75, Math.min(90, Math.round(readingsToUse.reduce((sum, r) => sum + r.bpm, 0) / readingsToUse.length)))
-    : null;
-  
-  console.log("Dashboard - Calculated avgBPM:", avgBPM);
-  
-  // Get last reading time with minutes/hours formatting (using same ECG data as LivePulse)
-  const formatLastReading = () => {
-    if (!ecgData.lastUpdate) return "No data yet";
-    
-    const secondsAgo = Math.floor((Date.now() - ecgData.lastUpdate.getTime()) / 1000);
-    
-    if (secondsAgo < 60) {
-      return "Just now";
-    } else if (secondsAgo < 3600) {
-      const minutes = Math.floor(secondsAgo / 60);
-      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
-    } else if (secondsAgo < 86400) {
-      const hours = Math.floor(secondsAgo / 3600);
-      return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
-    } else {
-      const days = Math.floor(secondsAgo / 86400);
-      return `${days} ${days === 1 ? 'day' : 'days'} ago`;
-    }
-  };
-  
-  const lastReading = formatLastReading();
+  const firstName = profile?.full_name?.split(" ")[0] || user?.user_metadata?.full_name?.split(" ")[0] || "there";
+  const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const recent = readings.filter((reading) => new Date(reading.created_at).getTime() >= dayAgo);
+  const averageBpm = recent.length ? Math.round(recent.reduce((sum, reading) => sum + reading.bpm, 0) / recent.length) : null;
+  const latestReading = ecgData.lastUpdate || readings[0]?.created_at;
+  const latestCondition = ecgData.predictions[0]?.disease_name;
+  const previewSamples = ecgData.samples.slice(-160);
+  const minimum = Math.min(...previewSamples.map((sample) => sample.value));
+  const maximum = Math.max(...previewSamples.map((sample) => sample.value));
+  const span = Math.max(maximum - minimum, 0.001);
+  const previewPoints = previewSamples.map((sample, index) => `${(index / Math.max(previewSamples.length - 1, 1)) * 600},${160 - ((sample.value - minimum) / span) * 140}`).join(" ");
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Health Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your health overview.</p>
+      <main className="page-container">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div><p className="eyebrow">{today}</p><h1 className="page-title mt-2">Welcome back, {firstName}</h1><p className="page-subtitle">Here is a clear view of your recent activity.</p></div>
+          <Button asChild className="h-11 rounded-xl"><Link to="/live-pulse"><Activity className="mr-2 h-4 w-4" />View live pulse</Link></Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Today's Average BPM (calculated from last 1 hour) */}
-          <Card className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Heart className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Today's Avg BPM</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {loadingPulse ? "..." : avgBPM ?? "N/A"}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Last Reading */}
-          <Card className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="pulse-indicator"></div>
-              <div>
-                <p className="text-sm text-muted-foreground">Last Reading</p>
-                <p className="text-sm font-medium text-foreground">
-                  {loadingPulse ? "..." : lastReading}
-                </p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="soft-panel p-5"><div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary"><HeartPulse className="h-5 w-5" /></div><p className="text-sm text-slate-500">Average heart rate</p><p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">{isLoading ? "…" : averageBpm ?? "—"}<span className="ml-1 text-sm font-medium text-slate-500">{averageBpm ? "BPM" : ""}</span></p><p className="mt-2 text-xs text-slate-500">Past 24 hours</p></div>
+          <div className="soft-panel p-5"><div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary"><Activity className="h-5 w-5" /></div><p className="text-sm text-slate-500">ECG signal</p><p className="mt-1 text-xl font-semibold text-slate-900">{ecgData.lastUpdate ? "Reading available" : "Waiting for data"}</p><p className="mt-2 text-xs text-slate-500">{ecgData.lastUpdate ? formatWhen(ecgData.lastUpdate) : "Connect your device to begin"}</p></div>
+          <div className="soft-panel p-5"><div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary"><CalendarDays className="h-5 w-5" /></div><p className="text-sm text-slate-500">Last reading</p><p className="mt-1 text-base font-semibold text-slate-900">{formatWhen(latestReading)}</p><p className="mt-2 text-xs text-slate-500">Your most recent recorded data</p></div>
+          <div className="soft-panel p-5"><div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary"><ShieldCheck className="h-5 w-5" /></div><p className="text-sm text-slate-500">Latest analysis</p><p className="mt-1 truncate text-base font-semibold text-slate-900">{latestCondition || "No analysis yet"}</p><p className="mt-2 text-xs text-slate-500">Based on recorded ECG data</p></div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Quick Actions */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <Button 
-                className="w-full justify-start" 
-                variant="outline"
-                onClick={() => navigate('/reports')}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                View Reports
-              </Button>
-              <Button 
-                className="w-full justify-start" 
-                variant="outline"
-                onClick={() => navigate('/live-pulse')}
-              >
-                <Activity className="h-4 w-4 mr-2" />
-                Live Pulse
-              </Button>
-            </div>
-          </Card>
-
-          {/* Emergency Contacts */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Emergency Contacts</h3>
-            <div className="space-y-3">
-              {loadingContacts ? (
-                <p className="text-sm text-muted-foreground">Loading contacts...</p>
-              ) : contacts && contacts.length > 0 ? (
-                contacts.slice(0, 2).map((contact) => (
-                  <div key={contact.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-foreground">{contact.name}</p>
-                      <p className="text-sm text-muted-foreground">{contact.relationship}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No emergency contacts added yet.</p>
-              )}
-            </div>
-          </Card>
-        </div>
-
-        {/* Health Classification Summary */}
-        <Card className="p-6 mt-6">
-          <h3 className="text-lg font-semibold mb-4">Health Classification Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-accent/10 rounded-lg">
-              <p className="text-2xl font-bold status-normal">Normal</p>
-              <p className="text-sm text-muted-foreground">85% of readings</p>
-            </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <p className="text-2xl font-bold status-warning">Caution</p>
-              <p className="text-sm text-muted-foreground">12% of readings</p>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <p className="text-2xl font-bold status-danger">Alert</p>
-              <p className="text-sm text-muted-foreground">3% of readings</p>
-            </div>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.45fr_1fr]">
+          <section className="soft-panel overflow-hidden">
+            <div className="flex items-center justify-between border-b border-blue-100 px-6 py-5"><div><p className="eyebrow">Monitoring</p><h2 className="mt-1 text-xl font-semibold">Your ECG at a glance</h2></div><Link to="/live-pulse" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">Open monitor<ArrowRight className="h-4 w-4" /></Link></div>
+            {ecgData.samples.length > 0 ? (
+              <div className="wave-grid flex h-64 items-center bg-[#f8fbff] px-5"><svg viewBox="0 0 600 180" preserveAspectRatio="none" className="h-44 w-full" role="img" aria-label="Recent ECG samples"><polyline points={previewPoints} fill="none" stroke="#2874ce" strokeWidth="2" strokeLinejoin="round" /></svg></div>
+            ) : (
+              <div className="wave-grid flex h-64 flex-col items-center justify-center bg-[#f8fbff] px-5 text-center"><div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-primary shadow-sm"><Activity className="h-7 w-7" /></div><p className="font-semibold text-slate-800">No ECG readings yet</p><p className="mt-1 max-w-xs text-sm text-slate-500">Your waveform will appear here when readings are available.</p></div>
+            )}
+          </section>
+          <div className="space-y-6">
+            <section className="soft-panel p-6"><div className="mb-5 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary"><FileText className="h-5 w-5" /></div><h2 className="text-lg font-semibold">Quick access</h2></div><div className="space-y-2"><Link to="/reports" className="flex items-center justify-between rounded-xl border border-blue-100 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-blue-50">View reports<ArrowRight className="h-4 w-4 text-primary" /></Link><Link to="/settings" className="flex items-center justify-between rounded-xl border border-blue-100 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-blue-50">Account settings<ArrowRight className="h-4 w-4 text-primary" /></Link></div></section>
+            <section className="soft-panel p-6"><div className="mb-4 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-primary"><Users className="h-5 w-5" /></div><h2 className="text-lg font-semibold">Emergency contacts</h2></div>{contacts.length ? <div className="space-y-2">{contacts.slice(0, 2).map((contact) => <p key={contact.id} className="flex justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm"><span className="font-medium">{contact.name}</span><span className="text-slate-500">{contact.relation}</span></p>)}</div> : <p className="text-sm text-slate-500">No contacts added yet.</p>}<Link to="/settings" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">Manage contacts<ArrowRight className="h-4 w-4" /></Link></section>
           </div>
-        </Card>
-      </div>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default Dashboard;
+}

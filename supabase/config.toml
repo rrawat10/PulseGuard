@@ -3,3 +3,6 @@ project_id = "njrrkgzahwyrdkbxwdhn"
 [auth]
 site_url = "https://pulseguard-drab.vercel.app"
 additional_redirect_urls = ["https://pulseguard-drab.vercel.app/dashboard", "http://localhost:8080/dashboard"]
+
+[auth.email]
+enable_confirmations = false

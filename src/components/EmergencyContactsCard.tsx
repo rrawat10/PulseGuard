@@ -1,198 +1,78 @@
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Phone, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, Trash2, Plus, Send } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+import { useEmergencyContacts } from "@/hooks/useHealthData";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-interface EmergencyContact {
-  id?: string;
-  name: string;
-  phone: string;
-  relationship: string;
-}
+interface Contact { id?: string; name: string; phone: string; relation: string }
 
 export default function EmergencyContactsCard() {
   const { user } = useAuth();
-  const [contacts, setContacts] = useState<EmergencyContact[]>([
-    { name: "", phone: "", relationship: "" }
-  ]);
-  const [testingSMS, setTestingSMS] = useState(false);
+  const { data: savedContacts } = useEmergencyContacts();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const addContact = () => {
-    setContacts([...contacts, { name: "", phone: "", relationship: "" }]);
+  useEffect(() => {
+    if (savedContacts) setContacts(savedContacts.map(({ id, name, phone, relation }) => ({ id, name, phone, relation })));
+  }, [savedContacts]);
+
+  const update = (index: number, field: "name" | "phone" | "relation", value: string) => {
+    setContacts((current) => current.map((contact, i) => i === index ? { ...contact, [field]: value } : contact));
   };
 
-  const removeContact = (index: number) => {
-    setContacts(contacts.filter((_, i) => i !== index));
-  };
-
-  const updateContact = (index: number, field: keyof EmergencyContact, value: string) => {
-    const updated = [...contacts];
-    updated[index] = { ...updated[index], [field]: value };
-    setContacts(updated);
-  };
-
-  const testEmergencySMS = async () => {
-    if (!user) {
-      toast.error("Please login first");
+  const save = async () => {
+    if (!user) return;
+    if (contacts.some(({ name, phone }) => !name.trim() || !/^\+?[0-9 ()-]{7,20}$/.test(phone.trim()))) {
+      toast({ title: "Check your contacts", description: "Each contact needs a name and a valid phone number.", variant: "destructive" });
       return;
     }
-
-    setTestingSMS(true);
+    setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-emergency-sms', {
-        body: {
-          type: 'test_alert',
-          disease_name: 'Test Alert - System Check',
-          confidence: 0.99
+      const remainingIds = contacts.map((contact) => contact.id).filter(Boolean) as string[];
+      for (const saved of savedContacts || []) {
+        if (!remainingIds.includes(saved.id)) {
+          const { error } = await supabase.from("emergency_contacts").delete().eq("id", saved.id).eq("user_id", user.id);
+          if (error) throw error;
         }
-      });
-
-      if (error) {
-        console.error("Function error:", error);
-        throw error;
       }
-      
-      console.log("SMS test result:", data);
-      toast.success(data.message || "Test SMS sent! Check your phone in 1-2 minutes.");
+      for (const contact of contacts) {
+        const values = { name: contact.name.trim(), phone: contact.phone.trim(), relation: contact.relation.trim() || "Contact" };
+        const result = contact.id
+          ? await supabase.from("emergency_contacts").update(values).eq("id", contact.id).eq("user_id", user.id)
+          : await supabase.from("emergency_contacts").insert({ ...values, user_id: user.id });
+        if (result.error) throw result.error;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["emergency-contacts", user.id] });
+      toast({ title: "Contacts saved" });
     } catch (error) {
-      console.error("Error sending test SMS:", error);
-      toast.error("Failed to send test SMS: " + (error as Error).message);
+      toast({ title: "Could not save contacts", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     } finally {
-      setTestingSMS(false);
-    }
-  };
-
-  const saveContacts = async () => {
-    if (!user) return;
-
-    try {
-      // Delete existing contacts
-      await supabase
-        .from("emergency_contacts")
-        .delete()
-        .eq("user_id", user.id);
-
-      // Insert new contacts
-      const validContacts = contacts.filter(c => c.name && c.phone);
-      
-      if (validContacts.length === 0) {
-        toast.error("Please add at least one contact with name and phone");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("emergency_contacts")
-        .insert(
-          validContacts.map(contact => ({
-            user_id: user.id,
-            name: contact.name,
-            phone: contact.phone,
-            relation: contact.relationship || "Emergency Contact",
-          }))
-        );
-
-      if (error) {
-        console.error("Supabase error details:", error);
-        throw error;
-      }
-      toast.success("Emergency contacts saved successfully!");
-    } catch (error) {
-      console.error("Error saving contacts:", error);
-      toast.error("Failed to save emergency contacts");
+      setSaving(false);
     }
   };
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Phone className="w-5 h-5 text-primary" />
-        <h2 className="text-xl font-semibold">Emergency Contacts (SMS Alerts)</h2>
-      </div>
-      
-      <p className="text-sm text-muted-foreground mb-4">
-        Add emergency contacts who will receive SMS alerts via Twilio when abnormal ECG is detected.
-      </p>
-
+    <section className="soft-panel p-6 sm:p-8">
+      <div className="mb-6 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-primary"><Phone className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold">Emergency contacts</h2><p className="text-sm text-slate-500">Keep important phone numbers with your account.</p></div></div>
       <div className="space-y-4">
-        {contacts.map((contact, index) => (
-          <div key={index} className="border rounded-lg p-4 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label>Name</Label>
-                <Input
-                  placeholder="Contact Name"
-                  value={contact.name}
-                  onChange={(e) => updateContact(index, "name", e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <Label>Relationship</Label>
-                <Input
-                  placeholder="Mother, Father, Spouse"
-                  value={contact.relationship}
-                  onChange={(e) => updateContact(index, "relationship", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Phone Number (with country code)</Label>
-              <Input
-                placeholder="+919876543210 or 9876543210"
-                value={contact.phone}
-                onChange={(e) => updateContact(index, "phone", e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Enter with +91 for India, +1 for US. If no country code, defaults to +91.
-              </p>
-            </div>
-
-            {contacts.length > 1 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => removeContact(index)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Remove
-              </Button>
-            )}
+        {contacts.map((contact, index) => <div key={contact.id || `new-${index}`} className="rounded-xl border border-blue-100 bg-slate-50/40 p-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2"><Label htmlFor={`contact-name-${index}`}>Name</Label><Input id={`contact-name-${index}`} value={contact.name} onChange={(event) => update(index, "name", event.target.value)} /></div>
+            <div className="space-y-2"><Label htmlFor={`contact-phone-${index}`}>Phone</Label><Input id={`contact-phone-${index}`} type="tel" placeholder="+91 98765 43210" value={contact.phone} onChange={(event) => update(index, "phone", event.target.value)} /></div>
+            <div className="space-y-2"><Label htmlFor={`contact-relation-${index}`}>Relationship</Label><Input id={`contact-relation-${index}`} value={contact.relation} onChange={(event) => update(index, "relation", event.target.value)} /></div>
           </div>
-        ))}
-
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={addContact}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Another Contact
-          </Button>
-          
-          <Button onClick={saveContacts}>
-            Save Emergency Contacts
-          </Button>
-
-          <Button 
-            variant="secondary" 
-            onClick={testEmergencySMS}
-            disabled={testingSMS}
-          >
-            <Send className="w-4 h-4 mr-2" />
-            {testingSMS ? "Sending Test SMS..." : "Test SMS"}
-          </Button>
-        </div>
-
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-blue-900 dark:text-blue-100">
-            <strong>💡 Test SMS:</strong> Click "Test SMS" to send a test alert to all saved contacts via Twilio. SMS delivery is instant.
-          </p>
-        </div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setContacts((current) => current.filter((_, i) => i !== index))} className="mt-3 text-slate-500"><Trash2 className="mr-2 h-4 w-4" />Remove</Button>
+        </div>)}
+        {!contacts.length && <p className="text-sm text-slate-500">No contacts saved yet.</p>}
+        <div className="flex flex-wrap gap-3"><Button type="button" variant="outline" onClick={() => setContacts((current) => [...current, { name: "", phone: "", relation: "" }])} className="rounded-xl"><Plus className="mr-2 h-4 w-4" />Add contact</Button><Button type="button" onClick={save} disabled={saving} className="rounded-xl"><Save className="mr-2 h-4 w-4" />{saving ? "Saving..." : "Save contacts"}</Button></div>
       </div>
-    </Card>
+    </section>
   );
 }

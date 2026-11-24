@@ -1,259 +1,51 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { ArrowRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Heart } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-const Register = () => {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    age: "",
-    gender: "",
-    emergencyContacts: [{ name: "", phone: "", relation: "" }],
-    doctorName: "",
-    doctorSpecialization: "",
-    doctorEmail: "",
-    enableEmailReports: false,
-  });
+export default function Register() {
+  const [form, setForm] = useState({ fullName: "", email: "", password: "", age: "", gender: "" });
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
-  const addEmergencyContact = () => {
-    setFormData(prev => ({
-      ...prev,
-      emergencyContacts: [...prev.emergencyContacts, { name: "", phone: "", relation: "" }]
-    }));
-  };
+  const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
-  const updateEmergencyContact = (index: number, field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      emergencyContacts: prev.emergencyContacts.map((contact, i) => 
-        i === index ? { ...contact, [field]: value } : contact
-      )
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
-    
-    // Prepare user metadata for Supabase
-    const userData = {
-      full_name: formData.fullName,
-      age: parseInt(formData.age),
-      gender: formData.gender,
-      emergency_contacts: formData.emergencyContacts,
-      doctor_name: formData.doctorName,
-      doctor_specialization: formData.doctorSpecialization,
-      doctor_email: formData.doctorEmail,
-      enable_email_reports: formData.enableEmailReports,
-    };
-
-    const { error } = await signUp(formData.email, formData.password, userData);
-    
-    if (!error) {
-      // Successfully signed up, navigate to login or dashboard
-      navigate("/login");
+    try {
+      const { error } = await signUp(form.email.trim(), form.password, {
+        full_name: form.fullName.trim(),
+        age: Number(form.age),
+        gender: form.gender,
+      });
+      if (!error) navigate("/dashboard", { replace: true });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <Card className="p-8">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <Heart className="h-12 w-12 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
-            <p className="text-muted-foreground">Join Fit Beat for comprehensive health tracking</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Personal Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Create a password"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    value={formData.age}
-                    onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
-                    placeholder="Your age"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Gender</Label>
-                  <Select onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Emergency Contacts */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Emergency Contacts</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addEmergencyContact}>
-                  Add Contact
-                </Button>
-              </div>
-
-              {formData.emergencyContacts.map((contact, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-border rounded-lg">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={contact.name}
-                      onChange={(e) => updateEmergencyContact(index, 'name', e.target.value)}
-                      placeholder="Contact name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <Input
-                      value={contact.phone}
-                      onChange={(e) => updateEmergencyContact(index, 'phone', e.target.value)}
-                      placeholder="Phone number"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Relation</Label>
-                    <Input
-                      value={contact.relation}
-                      onChange={(e) => updateEmergencyContact(index, 'relation', e.target.value)}
-                      placeholder="Relationship"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Doctor Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Doctor Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="doctorName">Doctor Name</Label>
-                  <Input
-                    id="doctorName"
-                    value={formData.doctorName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, doctorName: e.target.value }))}
-                    placeholder="Doctor's name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="doctorSpecialization">Specialization</Label>
-                  <Input
-                    id="doctorSpecialization"
-                    value={formData.doctorSpecialization}
-                    onChange={(e) => setFormData(prev => ({ ...prev, doctorSpecialization: e.target.value }))}
-                    placeholder="Doctor's specialization"
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="doctorEmail">Doctor Email</Label>
-                  <Input
-                    id="doctorEmail"
-                    type="email"
-                    value={formData.doctorEmail}
-                    onChange={(e) => setFormData(prev => ({ ...prev, doctorEmail: e.target.value }))}
-                    placeholder="Doctor's email"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="emailReports"
-                  checked={formData.enableEmailReports}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enableEmailReports: checked as boolean }))}
-                />
-                <Label htmlFor="emailReports">
-                  Enable daily/weekly email reports to doctor
-                </Label>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Create Account"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </Card>
-      </div>
-    </div>
+    <AuthLayout>
+      <p className="eyebrow">Get started</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Create your account</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-600">Set up your health workspace in a few simple steps.</p>
+      <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+        <div className="space-y-2"><Label htmlFor="fullName">Full name</Label><Input id="fullName" autoComplete="name" placeholder="Your name" value={form.fullName} onChange={(event) => update("fullName", event.target.value)} required className="h-11 rounded-xl" /></div>
+        <div className="space-y-2"><Label htmlFor="email">Email address</Label><Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={(event) => update("email", event.target.value)} required className="h-11 rounded-xl" /></div>
+        <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" autoComplete="new-password" placeholder="At least 8 characters" minLength={8} value={form.password} onChange={(event) => update("password", event.target.value)} required className="h-11 rounded-xl" /></div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2"><Label htmlFor="age">Age</Label><Input id="age" type="number" min={1} max={149} placeholder="Your age" value={form.age} onChange={(event) => update("age", event.target.value)} required className="h-11 rounded-xl" /></div>
+          <div className="space-y-2"><Label htmlFor="gender">Gender</Label><select id="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)} required className="flex h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
+        </div>
+        <Button type="submit" disabled={isLoading} className="h-11 w-full rounded-xl">{isLoading ? "Creating account..." : "Create account"}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+      </form>
+      <p className="mt-6 text-center text-sm text-slate-600">Already have an account? <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link></p>
+    </AuthLayout>
   );
-};
-
-export default Register;
+}

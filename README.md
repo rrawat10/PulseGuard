@@ -1,113 +1,40 @@
-# PulseGuard - ECG & Health Tracking
+# PulseGuard
 
-## Project Description
+PulseGuard is a web app for viewing ECG signals and running ECG classification. A user can create an account, upload a 10-second single-lead recording, view the waveform and model result, and review saved results in Reports.
 
-PulseGuard is an ECG and health tracking application with pulse monitoring, emergency alerts, and health reports. Users can review readings and manage emergency contacts.
+## What works
 
-## Features
+- Account registration and sign-in with Supabase Auth
+- Upload of CSV or TXT files containing 5,000 samples at 500 Hz
+- ECG inference through the hosted Hugging Face model, called by a Supabase Edge Function
+- Saved ECG readings and model results, scoped to the signed-in user
+- Waveform, dashboard, report history, CSV export, profile, and emergency contact storage
 
-- **Real-time Pulse Monitoring**: Live tracking of heart rate and health status
-- **ECG Analysis**: Integration with a hosted classifier and mappings for 77 cardiac patterns
-- **User Authentication**: Secure login and registration with Supabase
-- **Emergency Alerts**: Automatic alerts when abnormal readings are detected
-- **Health Reports**: Daily and weekly health summaries
-- **Multi-Language Audio Reports**: Text-to-speech in English, Hindi, and Punjabi (powered by Sarvam AI)
-- **Doctor Integration**: Connect with healthcare providers for automated reporting
-- **Emergency Contacts**: Manage emergency contact information
-- **ESP32 Integration**: Firmware for collecting ECG data from an AD8232 sensor
+The model is hosted at `https://M0hit18-my-ecg-model.hf.space/predict_ecg`. Its weights are not served from the browser or Vercel. Hardware streaming and SMS delivery are not connected to the current web flow. Model output is informational and is not a medical diagnosis.
 
-## Getting Started
-
-Follow these steps to run the project locally:
+## Run locally
 
 ```sh
-# Step 1: Clone the repository
 git clone https://github.com/rrawat10/PulseGuard.git
-
-# Step 2: Navigate to the project directory
 cd PulseGuard
-
-# Step 3: Install the necessary dependencies
 npm ci
-
-# Step 4: Start the development server
-npm run dev
 ```
 
-## Technologies Used
+Create `.env.local`:
 
-This project is built with:
-
-- **Frontend**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **UI Components**: shadcn-ui
-- **Styling**: Tailwind CSS
-- **Backend**: Supabase (Auth, Database, Real-time)
-- **State Management**: TanStack Query
-- **Routing**: React Router DOM
-- **Icons**: Lucide React
-- **Hardware**: ESP32 microcontroller with AD8232 ECG sensor
-- **ML Model**: HuggingFace ECG classification model (77 cardiac patterns)
-- **TTS Engine**: 
-  - English: Web Speech API (browser-based)
-  - Hindi/Punjabi: Sarvam AI (API-based, high-quality voices)
-- **Email Service**: Resend (for doctor reports)
-
-## Project Structure
-
-```
-src/
-├── components/          # Reusable UI components
-├── hooks/              # Custom React hooks
-├── integrations/       # External service integrations (Supabase)
-├── lib/               # Utility functions
-├── pages/             # Application pages/routes
-└── utils/             # Helper utilities
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ```
 
-## Database Schema
+Start the app with `npm run dev`. Build it with `npm run build`.
 
-The application uses Supabase with the following main tables:
-- `user_profiles` - User profile information
-- `pulse_readings` - Real-time pulse data
-- `ecg_readings` - Raw ECG signal data (500 samples/batch)
-- `disease_predictions` - ML model predictions with confidence scores
-- `emergency_contacts` - Emergency contact information
-- `doctor_details` - Healthcare provider information
-- `health_reports` - Generated health reports
-- `audio_reports` - Multi-language audio report metadata
-- `emergency_alerts` - System alerts and notifications
+For a new Supabase project, apply the migrations in `supabase/migrations` and deploy `supabase/functions/analyze-ecg`. The Edge Function uses the project's built-in `SUPABASE_URL` and `SUPABASE_ANON_KEY` secrets. Set `HF_SPACE_URL` only if using a different model endpoint.
 
-## Environment Setup
+## ECG input
 
-### Required API Keys
+Upload one numeric sample per line or a CSV with the sample in its last column. A header row is allowed. The signal must contain exactly 5,000 samples representing 10 seconds at 500 Hz. [sample-data](sample-data/README.md) contains a real, licensed ECG recording that can be used to check the upload and inference flow.
 
-1. **Supabase** (Backend & Database)
-   - The frontend currently has an existing Supabase URL and publishable key in `src/integrations/supabase/client.ts`. Replace these with your own project configuration before using authentication or stored data.
+## Stack
 
-2. **Sarvam AI** (Hindi/Punjabi TTS)
-   - Get from: https://dashboard.sarvam.ai/
-   - Set in Supabase secrets: `SARVAM_API_KEY`
-   - See `GET_SARVAM_API_KEY.md` for detailed instructions
-
-3. **HuggingFace** (ML Model)
-   - Set in Supabase secrets: `HF_TOKEN`
-   - The inference function calls an external hosted model; trained weights are not included in this repository.
-
-4. **Resend** (Email Service)
-   - Set in Supabase secrets: `RESEND_API_KEY`
-
-For complete setup instructions, see:
-- `SARVAM_AI_SETUP.md` - Sarvam AI TTS integration guide
-- `supabase/ENV_SETUP.md` - All environment variables
-- `ARCHITECTURE.md` - System architecture details
-- `DATA_FLOW.md` - Data flow documentation
-
-## Deployment
-
-The application can be deployed to various platforms:
-- Vercel
-- Netlify
-- Firebase Hosting
-- Or any static hosting service
-
+React, TypeScript, Vite, Tailwind CSS, Supabase Auth and Database, Supabase Edge Functions, Hugging Face model service, and Vercel.

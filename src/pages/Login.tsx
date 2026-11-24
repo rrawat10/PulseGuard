@@ -1,98 +1,47 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { ArrowRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Heart } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-const Login = () => {
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberDevice, setRememberDevice] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
-    
-    const { error } = await signIn(email, password);
-    
-    if (!error) {
-      // Successfully signed in, navigate to dashboard
-      navigate("/dashboard");
+    try {
+      const { error } = await signIn(email.trim(), password);
+      if (!error) navigate("/dashboard", { replace: true });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <Heart className="h-12 w-12 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to your Fit Beat account</p>
+    <AuthLayout>
+      <p className="eyebrow">Welcome back</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Sign in to PulseGuard</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-600">Your health overview is ready when you are.</p>
+      <form onSubmit={handleSubmit} className="mt-9 space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email address</Label>
+          <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required className="h-11 rounded-xl bg-white" />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="remember"
-              checked={rememberDevice}
-              onCheckedChange={(checked) => setRememberDevice(checked as boolean)}
-            />
-            <Label htmlFor="remember" className="text-sm">
-              Remember this device
-            </Label>
-          </div>
-
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing In..." : "Sign In"}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </p>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" type="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required className="h-11 rounded-xl bg-white" />
         </div>
-      </Card>
-    </div>
+        <Button type="submit" disabled={isLoading} className="h-11 w-full rounded-xl">{isLoading ? "Signing in..." : "Sign in"}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+      </form>
+      <p className="mt-7 text-center text-sm text-slate-600">New to PulseGuard? <Link to="/register" className="font-semibold text-primary hover:underline">Create an account</Link></p>
+    </AuthLayout>
   );
-};
-
-export default Login;
+}

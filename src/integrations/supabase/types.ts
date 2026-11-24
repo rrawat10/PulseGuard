@@ -10,10 +10,84 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
+      audio_reports: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          language: string
+          report_date: string
+          transcript: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          language: string
+          report_date: string
+          transcript: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          language?: string
+          report_date?: string
+          transcript?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      disease_predictions: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          ecg_reading_id: string
+          id: string
+          predicted_conditions: string[]
+          prediction_result: Json
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score: number
+          created_at?: string
+          ecg_reading_id: string
+          id?: string
+          predicted_conditions: string[]
+          prediction_result: Json
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          ecg_reading_id?: string
+          id?: string
+          predicted_conditions?: string[]
+          prediction_result?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disease_predictions_ecg_reading_id_fkey"
+            columns: ["ecg_reading_id"]
+            isOneToOne: false
+            referencedRelation: "ecg_readings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_details: {
         Row: {
           created_at: string
@@ -41,6 +115,39 @@ export type Database = {
           specialization?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ecg_readings: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          duration_seconds: number
+          id: string
+          reading_data: Json
+          sample_rate: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          duration_seconds: number
+          id?: string
+          reading_data: Json
+          sample_rate?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          duration_seconds?: number
+          id?: string
+          reading_data?: Json
+          sample_rate?: number
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -87,6 +194,7 @@ export type Database = {
       }
       emergency_contacts: {
         Row: {
+          carrier: string | null
           created_at: string
           id: string
           name: string
@@ -96,6 +204,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          carrier?: string | null
           created_at?: string
           id?: string
           name: string
@@ -105,6 +214,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          carrier?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -250,12 +360,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -279,11 +389,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -304,11 +414,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -329,11 +439,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -346,11 +456,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

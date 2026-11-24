@@ -146,6 +146,15 @@ CREATE POLICY "Users can create their own emergency alerts" ON public.emergency_
 CREATE POLICY "Users can update their own emergency alerts" ON public.emergency_alerts
   FOR UPDATE USING (auth.uid() = user_id);
 
+-- Define the trigger function before any table uses it.
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create triggers for updated_at columns
 CREATE TRIGGER update_user_profiles_updated_at
   BEFORE UPDATE ON public.user_profiles

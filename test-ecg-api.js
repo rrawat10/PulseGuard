@@ -1,11 +1,15 @@
 // Test script to verify ECG prediction API
 // Run with: node test-ecg-api.js
 
-const fetch = require('node-fetch');
+// Requires Node.js 18 or newer for built-in fetch.
 
-const SUPABASE_URL = 'https://qxvlhdqdbkrhiqdohgio.supabase.co/functions/v1/ecg-prediction';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4dmxoZHFkYmtyaGlxZG9oZ2lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0MjE0NzIsImV4cCI6MjA2Mzk5NzQ3Mn0.mQHTOZwZNAtnmwEFmHl6_EerVgpDvQjoPXm0CwRd5Dc';
-const DEVICE_API_KEY = 'ecg-device-2024-secure-key-xyz123';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+const DEVICE_API_KEY = process.env.DEVICE_API_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !DEVICE_API_KEY) {
+  throw new Error('Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, and DEVICE_API_KEY before running this script.');
+}
 
 // Generate 5000 random ECG-like samples
 const generateECGData = () => {

@@ -16,13 +16,13 @@ Add these to your Supabase project settings:
    supabase secrets set SARVAM_API_KEY=your_api_key_here
    ```
 
-2. **HF_TOKEN** (for ML model, already configured)
+2. **HF_TOKEN** (for ML model, configure if needed)
    - HuggingFace API token for ECG prediction model
 
-3. **RESEND_API_KEY** (for email notifications, already configured)
+3. **RESEND_API_KEY** (for email notifications, configure if needed)
    - Resend API key for doctor email reports
 
-4. **DEVICE_API_KEY** (for ESP32 authentication, already configured)
+4. **DEVICE_API_KEY** (for ESP32 authentication, configure before using hardware)
    - Custom security key for ESP32 device authentication
 
 ## Local Development
@@ -33,7 +33,7 @@ For local testing with Supabase CLI, create `.env` file in `supabase/functions/`
 SARVAM_API_KEY=your_sarvam_api_key
 HF_TOKEN=your_huggingface_token
 RESEND_API_KEY=your_resend_key
-DEVICE_API_KEY=ecg-device-2024-secure-key-xyz123
+DEVICE_API_KEY=your_new_device_api_key
 ```
 
 ## Setting Secrets via Supabase CLI

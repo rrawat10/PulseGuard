@@ -860,7 +860,7 @@ calculateBPM(samples: ECGSample[]) {
 │     │                                                      │
 │     ├─▶ Apply RLS Policy                                  │
 │     │   Policy: "Users can view their own ECG readings"   │
-│     │   WHERE auth.uid() = user_id OR user_id IS NULL     │
+│     │   WHERE auth.uid() = user_id                        │
 │     │                                                      │
 │     ├─▶ Filter Results                                    │
 │     │   - Only return rows matching policy                │

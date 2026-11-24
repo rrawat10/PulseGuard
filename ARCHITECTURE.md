@@ -247,7 +247,7 @@ src/
   - `graph_update`: boolean
   - `prediction`: DiseasePrediction[] or null
   - `buffer_status`: string (e.g., "2500/5000")
-- **URL**: `https://qxvlhdqdbkrhiqdohgio.supabase.co/functions/v1/ecg-prediction`
+- **URL**: `https://<your-project-ref>.supabase.co/functions/v1/ecg-prediction`
 
 #### **`ecg-stream`** (WebSocket for Live ECG)
 - **Purpose**: Real-time ECG data streaming via WebSocket
@@ -347,13 +347,13 @@ Row Level Security (RLS) enforced
 **User Data Isolation**
 - Users can only view/create their own records
 - Service role has full access (for edge functions)
-- Device readings (NULL user_id) viewable by all authenticated users
+- Device readings must be associated with a user before they appear in that user's dashboard
 
 **Example Policy**:
 ```sql
 CREATE POLICY "Users can view their own ECG readings" 
 ON public.ecg_readings
-FOR SELECT USING (auth.uid() = user_id OR user_id IS NULL);
+FOR SELECT TO authenticated USING (auth.uid() = user_id);
 ```
 
 ### 3. API Key Security

@@ -72,7 +72,7 @@ const Reports = () => {
       const { data: predictions, error } = await supabase
         .from('disease_predictions')
         .select('predicted_conditions')
-        .or(`user_id.eq.${user.id},user_id.is.null`)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -98,7 +98,7 @@ const Reports = () => {
       const { count, error: countError } = await supabase
         .from('disease_predictions')
         .select('*', { count: 'exact', head: true })
-        .or(`user_id.eq.${user.id},user_id.is.null`)
+        .eq('user_id', user.id)
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
@@ -144,12 +144,13 @@ const Reports = () => {
   };
 
   const handleExportCSV = async () => {
+    if (!user) return;
     try {
       // Determine date range based on selected report type
       let query = supabase
         .from('disease_predictions')
         .select('*')
-        .or(`user_id.eq.${user?.id},user_id.is.null`);
+        .eq('user_id', user.id);
 
       if (selectedReport === 'daily') {
         // For daily report, fetch today's data

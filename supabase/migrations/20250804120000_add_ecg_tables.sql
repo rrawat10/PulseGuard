@@ -40,23 +40,18 @@ DROP POLICY IF EXISTS "Service role can manage all disease predictions" ON publi
 
 -- RLS policies for authenticated users
 CREATE POLICY "Users can view their own ECG readings" ON public.ecg_readings
-  FOR SELECT USING (auth.uid() = user_id OR user_id IS NULL);
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can create their own ECG readings" ON public.ecg_readings
-  FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can view their own disease predictions" ON public.disease_predictions
-  FOR SELECT USING (auth.uid() = user_id OR user_id IS NULL);
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can create their own disease predictions" ON public.disease_predictions
-  FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
--- Service role policies (for device API key access)
-CREATE POLICY "Service role can manage all ECG readings" ON public.ecg_readings
-  FOR ALL USING (true);
-
-CREATE POLICY "Service role can manage all disease predictions" ON public.disease_predictions
-  FOR ALL USING (true);
+-- The service role already bypasses RLS; no permissive policy is needed.
 
 -- Create trigger for updated_at
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()

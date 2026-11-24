@@ -76,7 +76,7 @@ export async function generateAudioReportData(
   const { data: pulseReadings, error: pulseError } = await supabase
     .from('pulse_readings')
     .select('*')
-    .or(`user_id.eq.${userId},user_id.is.null`)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(60);
 
@@ -86,7 +86,7 @@ export async function generateAudioReportData(
   const { data: recentPredictions, error: predError } = await supabase
     .from('disease_predictions')
     .select('*')
-    .or(`user_id.eq.${userId},user_id.is.null`)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(100);
 
@@ -96,7 +96,7 @@ export async function generateAudioReportData(
   const { count: totalPredictionsCount, error: countError } = await supabase
     .from('disease_predictions')
     .select('*', { count: 'exact', head: true })
-    .or(`user_id.eq.${userId},user_id.is.null`)
+    .eq('user_id', userId)
     .gte('created_at', startOfDay.toISOString())
     .lt('created_at', endOfDay.toISOString());
 

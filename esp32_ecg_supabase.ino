@@ -5,17 +5,17 @@
 // ==========================================
 // 🛠️ USER CONFIGURATION (CHANGE THESE!)
 // ==========================================
-const char* ssid          = "EACCESS-M2";        // Your WiFi Name
-const char* password      = "hostelnet";         // Your WiFi Password
+const char* ssid          = "YOUR_WIFI_SSID";        // Your WiFi Name
+const char* password      = "YOUR_WIFI_PASSWORD";         // Your WiFi Password
 
 // Your Supabase Edge Function URL
-const char* supabaseUrl   = "https://qxvlhdqdbkrhiqdohgio.supabase.co/functions/v1/ecg-prediction";
+const char* supabaseUrl   = "https://njrrkgzahwyrdkbxwdhn.supabase.co/functions/v1/ecg-prediction";
 
-// Your Supabase Anon Key (The long JWT string)
-const char* supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4dmxoZHFkYmtyaGlxZG9oZ2lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0MjE0NzIsImV4cCI6MjA2Mzk5NzQ3Mn0.mQHTOZwZNAtnmwEFmHl6_EerVgpDvQjoPXm0CwRd5Dc";
+// Your Supabase publishable key
+const char* supabaseAnonKey = "YOUR_SUPABASE_PUBLISHABLE_KEY";
 
 // Your Custom Device Security Key
-const char* deviceApiKey  = "ecg-device-2024-secure-key-xyz123";
+const char* deviceApiKey  = "YOUR_NEW_DEVICE_API_KEY";
 
 // Unique Name for this Device
 const char* deviceId      = "ESP32-001"; 

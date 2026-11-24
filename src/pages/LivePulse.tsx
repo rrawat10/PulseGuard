@@ -27,7 +27,7 @@ const LivePulse = () => {
       const { count, error } = await supabase
         .from('disease_predictions')
         .select('*', { count: 'exact', head: true })
-        .or(`user_id.eq.${user.id},user_id.is.null`);
+        .eq('user_id', user.id);
 
       if (!error && count !== null) {
         setTotalPredictions(count);

@@ -62,11 +62,11 @@ export const useECGData = () => {
 
     setIsLoading(true);
     try {
-      // Fetch latest ECG reading (including NULL user_id for device readings)
+      // Fetch only this user's ECG readings.
       const { data: readings, error: readingError } = await supabase
         .from('ecg_readings')
         .select('*')
-        .or(`user_id.eq.${user.id},user_id.is.null`)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -99,7 +99,7 @@ export const useECGData = () => {
         const { data: recentReadings } = await supabase
           .from('ecg_readings')
           .select('reading_data')
-          .or(`user_id.eq.${user.id},user_id.is.null`)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(10); // Get last 10 chunks (10 seconds)
 

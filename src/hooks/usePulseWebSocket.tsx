@@ -25,7 +25,7 @@ export const usePulseWebSocket = () => {
 
     try {
       // Use the Supabase project URL for WebSocket connection
-      const wsUrl = `wss://qxvlhdqdbkrhiqdohgio.functions.supabase.co/pulse-stream`;
+      const wsUrl = `${import.meta.env.VITE_SUPABASE_URL.replace('https://', 'wss://').replace('.supabase.co', '.functions.supabase.co')}/pulse-stream`;
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {

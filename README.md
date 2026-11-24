@@ -12,6 +12,14 @@ PulseGuard is a web app for viewing ECG signals and running ECG classification. 
 
 The model is hosted at `https://M0hit18-my-ecg-model.hf.space/predict_ecg`. Its weights are not served from the browser or Vercel. Hardware streaming and SMS delivery are not connected to the current web flow. Model output is informational and is not a medical diagnosis.
 
+## Model and analysis pipeline
+
+PulseGuard accepts a 10-second Lead I ECG: 5,000 numeric samples at 500 Hz. The website validates the length and values, then sends the signal with the signed-in user's session to the `analyze-ecg` Supabase Edge Function. The function verifies the user, calls the hosted model, checks its response, and saves the waveform and highest-scoring label in the user's report history.
+
+The hosted service removes the signal mean, scales it with fixed global values (`-18.607` to `18.217`), and shapes it as `(1, 5000, 1)`. Its 1D ResNet has a convolutional stem, four two-block residual stages with 64, 128, 256 and 512 filters, global average pooling, and 77 sigmoid outputs. The API returns all 77 scores and the highest-scoring label; PulseGuard currently shows that single result. The displayed score is a model output, not a calibrated probability of a correct diagnosis. The model service pads or crops arbitrary lengths, although PulseGuard requires exactly 5,000 samples before calling it.
+
+The available `config.json` points to the [PhysioNet ECG arrhythmia dataset](https://physionet.org/content/ecg-arrhythmia/1.0.0/) and names separate prepared Lead I train, validation and test files. It specifies augmentation with noise (standard deviation `0.01`), shifts (up to 50 samples), and amplitude scaling (`0.1`); up to 100 epochs, batch size 32, learning rate `0.001`, validation-loss checkpointing, early stopping after 10 stagnant epochs, and learning-rate reduction after 5. These are **configuration values**, not a verified record of the run that produced the deployed weights. The training code, split proportions, run logs, and measured test metrics are unavailable. The configuration also has an 88-entry class-count list while the served model has 77 outputs, so no accuracy, sensitivity, or specificity is claimed here.
+
 ## Run locally
 
 ```sh
